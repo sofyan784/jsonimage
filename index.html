@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Prompt Builder (UI Dirapikan)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top to allow scrolling */
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        .input-group label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            color: #4a5568;
+            transition: border-color 0.2s;
+        }
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: #6366f1; /* Indigo 500 */
+        }
+        .btn {
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border: none;
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .btn-primary {
+            background-color: #6366f1; /* Indigo 500 */
+            color: white;
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+        }
+        .btn-primary:hover:not(:disabled) {
+            background-color: #4f46e5; /* Indigo 600 */
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(99, 102, 241, 0.3);
+        }
+        .btn-primary:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        .btn-secondary {
+            background-color: #e2e8f0; /* Gray 200 */
+            color: #475569; /* Gray 600 */
+        }
+        .btn-secondary:hover:not(:disabled) {
+            background-color: #cbd5e1; /* Gray 300 */
+        }
+        .btn-danger {
+            background-color: #fee2e2; /* Red 100 */
+            color: #ef4444; /* Red 500 */
+        }
+        .btn-danger:hover:not(:disabled) {
+            background-color: #fecaca; /* Red 200 */
+            color: #dc2626; /* Red 600 */
+        }
+        .btn-info {
+            background-color: #10b981; /* Emerald 500 */
+            color: white;
+        }
+        .btn-info:hover:not(:disabled) {
+            background-color: #059669; /* Emerald 600 */
+        }
+        .btn-success {
+            background-color: #8b5cf6; /* Violet 500 */
+            color: white;
+        }
+        .btn-success:hover:not(:disabled) {
+            background-color: #7c3aed; /* Violet 600 */
+        }
+        
+        /* --- New/Updated Styles for Prompt List --- */
+        .prompt-list-item {
+            background-color: #f8fafc; /* Gray 50 */
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 1rem;
+            transition: box-shadow 0.2s;
+        }
+        .prompt-list-item:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        .btn-icon {
+            padding: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: transparent;
+            color: #64748b; /* Gray 500 */
+        }
+        .btn-icon:hover:not(:disabled) {
+            background-color: #f1f5f9; /* Gray 100 */
+            color: #1e293b; /* Gray 800 */
+        }
+        .btn-icon.btn-edit:hover:not(:disabled) {
+            color: #3b82f6; /* Blue 500 */
+        }
+        .btn-icon.btn-danger:hover:not(:disabled) {
+            color: #ef4444; /* Red 500 */
+        }
+        .btn-icon svg {
+            width: 18px;
+            height: 18px;
+        }
+        /* --- End New/Updated Styles --- */
+
+        #generatedPrompt {
+            background-color: #f1f5f9; /* Gray 100 */
+            padding: 15px;
+            border-radius: 10px;
+            min-height: 50px;
+            word-wrap: break-word;
+            font-family: monospace;
+            color: #1e293b; /* Gray 800 */
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            border: 1px solid #e2e8f0; /* Gray 200 */
+        }
+
+        /* Custom Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 500px;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        .modal.show .modal-content {
+            transform: translateY(0);
+        }
+        .modal-content h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #333;
+            text-align: center;
+        }
+        .modal-content p {
+            margin-bottom: 25px;
+            color: #555;
+            white-space: pre-wrap;
+            text-align: left;
+            max-height: 50vh;
+            overflow-y: auto;
+            background-color: #f7fafc;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+        .modal-content .modal-actions {
+            text-align: center;
+        }
+        
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            .prompt-list-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            .prompt-list-item .actions {
+                width: 100%;
+                display: flex;
+                justify-content: flex-end;
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">JSON Prompt Builder</h1>
+
+        <!-- Bagian untuk memasukkan API Key -->
+        <div class="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-xl shadow-inner">
+            <h2 class="text-xl font-semibold text-blue-800 mb-4">Kunci API Gemini Anda</h2>
+            <div class="input-group mb-3">
+                <input type="password" id="apiKeyInput" placeholder="Masukkan Kunci API Gemini Anda di sini..." class="bg-white">
+            </div>
+            <p class="text-sm text-gray-600 mb-4">
+                Kunci API diperlukan agar fitur AI (Ide Acak, Kembangkan, Analisis) berfungsi. Dapatkan Kunci API Anda di <a href="https://aistudio.google.com/" target="_blank" class="text-blue-600 hover:underline font-medium">Google AI Studio</a>.
+            </p>
+            <div class="flex justify-start">
+                 <button id="saveApiKeyBtn" class="btn btn-primary bg-blue-600 hover:bg-blue-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-save" viewBox="0 0 16 16">
+                        <path d="M2 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H9.5a1 1 0 0 0-1 1v4.5h2a.5.5 0 0 1 .354.854l-2.5 2.5a.5.5 0 0 1-.708 0l-2.5-2.5A.5.5 0 0 1 5.5 6.5h2V2a2 2 0 0 1 2-2H14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h2.5a.5.5 0 0 1 0 1z"/>
+                    </svg>
+                    <span>Simpan</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Form untuk Menambah/Mengedit Prompt -->
+        <div class="bg-gray-50 p-6 rounded-xl shadow-inner">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4" id="formTitle">Tambah Bagian Prompt Baru</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="input-group">
+                    <label for="category">Kategori:</label>
+                    <select id="category" class="rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="subject">Subjek</option>
+                        <option value="detail">Detail</option>
+                        <option value="style">Gaya</option>
+                        <option value="color">Warna</option>
+                        <option value="mood">Suasana</option>
+                        <option value="lighting">Pencahayaan</option>
+                        <option value="quality">Kualitas</option>
+                        <option value="other">Lainnya</option>
+                    </select>
+                </div>
+                <!-- Kontainer untuk semua jenis input nilai -->
+                <div class="input-group">
+                    <label for="value">Nilai:</label>
+                    <!-- Input Teks Default -->
+                    <div id="textValueContainer">
+                        <input type="text" id="value" class="rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <!-- Dropdown Gaya (tersembunyi) -->
+                    <div id="styleValueContainer" class="hidden">
+                        <select id="styleValue" class="rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                            <optgroup label="Gerakan Seni">
+                                <option value="Impressionism">Impressionism</option>
+                                <option value="Surrealism">Surrealism</option>
+                                <option value="Cubism">Cubism</option>
+                                <option value="Pop Art">Pop Art</option>
+                                <option value="Art Nouveau">Art Nouveau</option>
+                                <option value="Minimalism">Minimalism</option>
+                                <option value="Steampunk">Steampunk</option>
+                                <option value="Cyberpunk">Cyberpunk</option>
+                            </optgroup>
+                            <optgroup label="Media & Teknik Seni">
+                                <option value="Digital Painting">Digital Painting</option>
+                                <option value="Oil Painting">Oil Painting</option>
+                                <option value="Watercolor">Watercolor</option>
+                                <option value="Pencil Sketch">Pencil Sketch</option>
+                                <option value="Ink Drawing">Ink Drawing</option>
+                                <option value="Vector Art">Vector Art</option>
+                                <option value="3D Render">3D Render</option>
+                                <option value="Pixel Art">Pixel Art</option>
+                            </optgroup>
+                             <optgroup label="Gaya Fotografi">
+                                <option value="Cinematic">Cinematic</option>
+                                <option value="Portrait Photography">Portrait Photography</option>
+                                <option value="Landscape Photography">Landscape Photography</option>
+                                <option value="Black and White">Black and White</option>
+                                <option value="Long Exposure">Long Exposure</option>
+                            </optgroup>
+                            <optgroup label="Gaya Ilustrasi & Kartun">
+                                <option value="Anime Style">Anime Style</option>
+                                <option value="Disney Style">Disney Style</option>
+                                <option value="Cartoon Style">Cartoon Style</option>
+                                <option value="Comic Book Art">Comic Book Art</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <!-- Dropdown Kualitas (tersembunyi) -->
+                    <div id="qualityValueContainer" class="hidden">
+                        <select id="qualityValue" class="rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="Standard Quality">Standard Quality</option>
+                            <option value="High Quality">High Quality</option>
+                            <option value="Best Quality">Best Quality</option>
+                            <option value="Masterpiece">Masterpiece</option>
+                            <option value="Photorealistic">Photorealistic</option>
+                            <option value="Hyperrealistic">Hyperrealistic</option>
+                            <option value="Ultra-detailed">Ultra-detailed</option>
+                            <option value="4K">4K</option>
+                            <option value="8K">8K</option>
+                            <option value="Sharp Focus">Sharp Focus</option>
+                            <option value="Film Grain">Film Grain</option>
+                        </select>
+                    </div>
+                    <!-- Dropdown Pencahayaan (tersembunyi) -->
+                    <div id="lightingValueContainer" class="hidden">
+                        <select id="lightingValue" class="rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                            <optgroup label="Waktu & Suasana Alam">
+                                <option value="Soft Morning Light">Soft Morning Light</option>
+                                <option value="Golden Hour">Golden Hour</option>
+                                <option value="Midday Sun">Midday Sun</option>
+                                <option value="Twilight">Twilight</option>
+                                <option value="Moonlight">Moonlight</option>
+                                <option value="Overcast">Overcast</option>
+                            </optgroup>
+                            <optgroup label="Pencahayaan Dramatis & Artistik">
+                                <option value="Cinematic Lighting">Cinematic Lighting</option>
+                                <option value="Dramatic Lighting">Dramatic Lighting</option>
+                                <option value="Rim Lighting">Rim Lighting</option>
+                                <option value="Studio Lighting">Studio Lighting</option>
+                                <option value="Neon Lighting">Neon Lighting</option>
+                                <option value="Volumetric Lighting">Volumetric Lighting</option>
+                                <option value="Backlight">Backlight</option>
+                            </optgroup>
+                            <optgroup label="Kualitas & Sifat Cahaya">
+                                <option value="Soft Light">Soft Light</option>
+                                <option value="Hard Light">Hard Light</option>
+                                <option value="Ambient Light">Ambient Light</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                </div>
+                <div class="input-group md:col-span-2">
+                    <label for="aspectRatio">Rasio Aspek (Opsional):</label>
+                    <select id="aspectRatio" class="rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="">Auto (Default)</option>
+                        <option value="16:9">Lanskap (16:9)</option>
+                        <option value="9:16">Potret (9:16)</option>
+                        <option value="4:3">Standar (4:3)</option>
+                        <option value="1:1">Persegi (1:1)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button id="randomIdeaBtn" class="btn btn-info">Ide Acak & Tambah</button>
+                <button id="addUpdateBtn" class="btn btn-primary">Tambah Prompt</button>
+                <button id="cancelEditBtn" class="btn btn-secondary hidden">Batal Edit</button>
+            </div>
+        </div>
+
+        <!-- Daftar Prompt yang Ada -->
+        <div class="bg-gray-50 p-6 rounded-xl shadow-inner">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Daftar Prompt Anda</h2>
+            <div id="promptList" class="min-h-[100px]">
+                <p id="noPromptMessage" class="text-gray-500 text-center py-5">Belum ada prompt ditambahkan.</p>
+            </div>
+            <div class="flex justify-end mt-4">
+                <button id="clearAllPromptsBtn" class="btn btn-danger text-sm">Hapus Semua</button>
+            </div>
+        </div>
+
+        <!-- Prompt yang Dihasilkan -->
+        <div class="bg-gray-50 p-6 rounded-xl shadow-inner">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-700">Prompt Gabungan (JSON)</h2>
+                <!-- Tombol Aksi AI -->
+                <div class="flex gap-2">
+                    <button id="analyzePromptBtn" title="Analisis Prompt Saya" class="btn btn-secondary">✨ Analisis</button>
+                    <button id="expandIdeaBtn" title="Kembangkan Ide dari Subjek" class="btn btn-success">✨ Kembangkan</button>
+                </div>
+            </div>
+            <pre id="generatedPrompt" class="border border-gray-300 p-4 rounded-lg bg-gray-100 text-gray-800 text-sm break-words">Prompt Anda akan muncul di sini.</pre>
+            <!-- Tombol Salin terpisah -->
+            <div class="flex justify-center mt-4">
+                <button id="copyPromptBtn" title="Salin Prompt JSON" class="btn btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard" viewBox="0 0 16 16">
+                        <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
+                        <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
+                    </svg>
+                    <span>Salin Prompt</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Modal for Messages -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle"></h3>
+            <p id="modalMessage"></p>
+            <div class="modal-actions">
+                <button id="modalConfirmBtn" class="btn btn-primary hidden">Konfirmasi</button>
+                <button id="modalCloseBtn" class="btn btn-secondary">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===================================================================================
+        // Inisialisasi & Pengambilan Elemen DOM
+        // ===================================================================================
+        let prompts = [];
+        let editingIndex = -1;
+
+        const categorySelect = document.getElementById('category');
+        const aspectRatioSelect = document.getElementById('aspectRatio');
+        const addUpdateBtn = document.getElementById('addUpdateBtn');
+        const cancelEditBtn = document.getElementById('cancelEditBtn');
+        const formTitle = document.getElementById('formTitle');
+        const promptListDiv = document.getElementById('promptList');
+        const noPromptMessage = document.getElementById('noPromptMessage');
+        const generatedPromptDiv = document.getElementById('generatedPrompt');
+        const clearAllPromptsBtn = document.getElementById('clearAllPromptsBtn');
+        const randomIdeaBtn = document.getElementById('randomIdeaBtn');
+        const messageModal = document.getElementById('messageModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+        
+        const textValueContainer = document.getElementById('textValueContainer');
+        const styleValueContainer = document.getElementById('styleValueContainer');
+        const qualityValueContainer = document.getElementById('qualityValueContainer');
+        const lightingValueContainer = document.getElementById('lightingValueContainer');
+        const valueInput = document.getElementById('value');
+        const styleValueSelect = document.getElementById('styleValue');
+        const qualityValueSelect = document.getElementById('qualityValue');
+        const lightingValueSelect = document.getElementById('lightingValue');
+
+        const expandIdeaBtn = document.getElementById('expandIdeaBtn');
+        const analyzePromptBtn = document.getElementById('analyzePromptBtn');
+        const copyPromptBtn = document.getElementById('copyPromptBtn');
+        
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+
+        const placeholders = {
+            subject: 'Contoh: seekor singa agung di atas batu',
+            detail: 'Contoh: mengenakan mahkota emas',
+            style: '',
+            color: 'Contoh: warna-warna cerah dan hangat',
+            mood: 'Contoh: epik, misterius',
+            lighting: '',
+            quality: '',
+            other: 'Contoh: bidikan sudut lebar'
+        };
+
+        // ===================================================================================
+        // Fungsi Utilitas & Penanganan Error
+        // ===================================================================================
+
+        async function fetchWithRetry(url, options, retries = 3) {
+            let delay = 1000;
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.ok || (response.status >= 400 && response.status < 500)) {
+                        return response;
+                    }
+                    console.warn(`Server error (status ${response.status}). Retrying... (${i + 1}/${retries})`);
+                } catch (error) {
+                    console.warn(`Network error. Retrying... (${i + 1}/${retries})`, error);
+                }
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2;
+            }
+            throw new Error('Gagal menghubungi server setelah beberapa kali percobaan. Periksa koneksi internet Anda.');
+        }
+
+        function showModal(title, message, options = {}) {
+            const { isConfirm = false } = options;
+
+            return new Promise((resolve) => {
+                modalTitle.textContent = title;
+                modalMessage.textContent = message;
+                messageModal.classList.add('show');
+
+                modalConfirmBtn.classList.toggle('hidden', !isConfirm);
+
+                if (isConfirm) {
+                    modalConfirmBtn.onclick = () => {
+                        messageModal.classList.remove('show');
+                        resolve(true);
+                    };
+                }
+
+                modalCloseBtn.onclick = () => {
+                    messageModal.classList.remove('show');
+                    resolve(false);
+                };
+            });
+        }
+        
+        function copyGeneratedPrompt() {
+            const promptText = generatedPromptDiv.textContent;
+            if (promptText === 'Prompt Anda akan muncul di sini.' || !promptText.trim()) {
+                showModal('Peringatan', 'Tidak ada prompt untuk disalin.');
+                return;
+            }
+            
+            const textarea = document.createElement('textarea');
+            textarea.value = promptText;
+            textarea.style.position = 'fixed'; // Prevent scrolling to bottom
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showModal('Berhasil', 'Prompt JSON berhasil disalin ke clipboard!');
+            } catch (err) {
+                console.error('Gagal menyalin teks: ', err);
+                showModal('Gagal', 'Tidak dapat menyalin prompt. Silakan coba salin secara manual.');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function updateValueInputVisibility() {
+            const selectedCategory = categorySelect.value;
+            
+            textValueContainer.classList.add('hidden');
+            styleValueContainer.classList.add('hidden');
+            qualityValueContainer.classList.add('hidden');
+            lightingValueContainer.classList.add('hidden');
+            
+            if (selectedCategory === 'style') {
+                styleValueContainer.classList.remove('hidden');
+            } else if (selectedCategory === 'quality') {
+                qualityValueContainer.classList.remove('hidden');
+            } else if (selectedCategory === 'lighting') {
+                lightingValueContainer.classList.remove('hidden');
+            } else {
+                textValueContainer.classList.remove('hidden');
+                valueInput.placeholder = placeholders[selectedCategory] || 'Masukkan nilai...';
+            }
+        }
+
+        // ===================================================================================
+        // Manajemen API Key
+        // ===================================================================================
+
+        function saveApiKey() {
+            const key = apiKeyInput.value.trim();
+            if (key) {
+                localStorage.setItem('geminiApiKey', key);
+                showModal('Berhasil', 'Kunci API Anda telah berhasil disimpan di browser ini.');
+            } else {
+                showModal('Peringatan', 'Kolom Kunci API kosong. Tidak ada yang disimpan.');
+            }
+        }
+
+        function loadApiKey() {
+            const savedKey = localStorage.getItem('geminiApiKey');
+            if (savedKey) {
+                apiKeyInput.value = savedKey;
+            }
+        }
+        
+        function getApiKey() {
+            return apiKeyInput.value.trim() || "";
+        }
+
+        // ===================================================================================
+        // Manajemen State & LocalStorage
+        // ===================================================================================
+
+        function saveSettings() {
+            try {
+                localStorage.setItem('imagePrompts', JSON.stringify(prompts));
+                localStorage.setItem('selectedAspectRatio', aspectRatioSelect.value);
+            } catch (e) {
+                console.error("Error saat menyimpan ke localStorage:", e);
+                showModal('Peringatan Penyimpanan', 'Gagal menyimpan pengaturan. Penyimpanan browser mungkin penuh.');
+            }
+        }
+
+        function loadSettings() {
+            try {
+                const storedPrompts = localStorage.getItem('imagePrompts');
+                if (storedPrompts) prompts = JSON.parse(storedPrompts);
+                const storedAspectRatio = localStorage.getItem('selectedAspectRatio');
+                if (storedAspectRatio) aspectRatioSelect.value = storedAspectRatio;
+            } catch (e) {
+                console.error("Error saat memuat dari localStorage:", e);
+                showModal('Peringatan Pemuatan', 'Gagal memuat pengaturan. Data mungkin rusak.');
+                localStorage.removeItem('imagePrompts');
+                localStorage.removeItem('selectedAspectRatio');
+                prompts = [];
+            }
+        }
+
+        // ===================================================================================
+        // Operasi CRUD (Create, Read, Update, Delete) untuk Prompt
+        // ===================================================================================
+
+        function renderPromptList() {
+            promptListDiv.innerHTML = '';
+            if (prompts.length === 0) {
+                noPromptMessage.classList.remove('hidden');
+            } else {
+                noPromptMessage.classList.add('hidden');
+                prompts.forEach((prompt, index) => {
+                    const displayCategory = displayCategoryIndonesian(prompt.category);
+                    const promptItem = document.createElement('div');
+                    promptItem.className = 'prompt-list-item';
+                    promptItem.innerHTML = `
+                        <div class="flex-grow min-w-0">
+                            <span class="font-semibold text-gray-700">${displayCategory}:</span>
+                            <span class="text-gray-800 ml-2 break-words">${prompt.value}</span>
+                        </div>
+                        <div class="actions flex-shrink-0 flex items-center gap-1">
+                            <button class="btn btn-icon btn-edit" title="Edit Prompt" data-index="${index}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zM12.293 6.5l-3 3L8 11.293 6.793 10 9.5 7.293 6.5 4.293 4.293 6.5 3 5.207 12.5 1.207 14.793 3.5z"/>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon btn-danger" title="Hapus Prompt" data-index="${index}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                                    <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3V2h11v1z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    `;
+                    promptListDiv.appendChild(promptItem);
+                });
+                promptListDiv.querySelectorAll('.btn-edit').forEach(b => b.addEventListener('click', e => editPrompt(parseInt(e.currentTarget.dataset.index))));
+                promptListDiv.querySelectorAll('.btn-danger').forEach(b => b.addEventListener('click', async e => {
+                    const index = parseInt(e.currentTarget.dataset.index);
+                    if (await showModal('Konfirmasi Hapus', 'Anda yakin ingin menghapus prompt ini?', {isConfirm: true})) {
+                        deletePrompt(index);
+                    }
+                }));
+            }
+            updateGeneratedPrompt();
+            saveSettings();
+        }
+
+        function addUpdatePrompt() {
+            const category = categorySelect.value;
+            let value = '';
+
+            switch (category) {
+                case 'style':
+                    value = styleValueSelect.value;
+                    break;
+                case 'quality':
+                    value = qualityValueSelect.value;
+                    break;
+                case 'lighting':
+                    value = lightingValueSelect.value;
+                    break;
+                default:
+                    value = valueInput.value.trim();
+                    break;
+            }
+
+            if (!value) {
+                showModal('Input Kosong', 'Nilai prompt tidak boleh kosong.');
+                return;
+            }
+
+            const existingIndex = prompts.findIndex(p => p.category === category);
+            if (editingIndex === -1) {
+                if (existingIndex !== -1) {
+                    prompts[existingIndex].value = value;
+                    showModal('Peringatan', `Kategori "${displayCategoryIndonesian(category)}" sudah ada. Nilainya telah diperbarui.`);
+                } else {
+                    prompts.push({ category, value });
+                }
+            } else {
+                prompts[editingIndex] = { category, value };
+                cancelEdit();
+            }
+            valueInput.value = '';
+            renderPromptList();
+        }
+
+        function editPrompt(index) {
+            const promptToEdit = prompts[index];
+            categorySelect.value = promptToEdit.category;
+            
+            updateValueInputVisibility();
+
+            switch (promptToEdit.category) {
+                case 'style':
+                    styleValueSelect.value = promptToEdit.value;
+                    break;
+                case 'quality':
+                    qualityValueSelect.value = promptToEdit.value;
+                    break;
+                case 'lighting':
+                    lightingValueSelect.value = promptToEdit.value;
+                    break;
+                default:
+                    valueInput.value = promptToEdit.value;
+                    break;
+            }
+            
+            editingIndex = index;
+            addUpdateBtn.textContent = 'Perbarui Prompt';
+            cancelEditBtn.classList.remove('hidden');
+            formTitle.textContent = 'Edit Bagian Prompt';
+        }
+
+        function cancelEdit() {
+            editingIndex = -1;
+            valueInput.value = '';
+            styleValueSelect.selectedIndex = 0;
+            qualityValueSelect.selectedIndex = 0;
+            lightingValueSelect.selectedIndex = 0;
+            addUpdateBtn.textContent = 'Tambah Prompt';
+            cancelEditBtn.classList.add('hidden');
+            formTitle.textContent = 'Tambah Bagian Prompt Baru';
+            updateValueInputVisibility();
+        }
+
+        function deletePrompt(index) {
+            prompts.splice(index, 1);
+            renderPromptList();
+        }
+
+        async function clearAllPrompts() {
+            if (await showModal('Konfirmasi Hapus Semua', 'Anda yakin ingin menghapus SEMUA prompt? Aksi ini tidak dapat dibatalkan.', {isConfirm: true})) {
+                prompts = [];
+                renderPromptList();
+                showModal('Berhasil', 'Semua prompt telah dihapus.');
+            }
+        }
+
+        function displayCategoryIndonesian(categoryKey) {
+            const names = { subject: 'Subjek', detail: 'Detail', style: 'Gaya', color: 'Warna', mood: 'Suasana', lighting: 'Pencahayaan', quality: 'Kualitas', other: 'Lainnya' };
+            return names[categoryKey] || categoryKey;
+        }
+
+        // ===================================================================================
+        // Logika Utama: Pembuatan Prompt & Fitur AI
+        // ===================================================================================
+
+        function getGeneratedPromptObject() {
+            const finalPrompt = {};
+            const categoryMap = {
+                subject: 'subject', detail: 'details', style: 'style', color: 'color_palette',
+                mood: 'mood', lighting: 'lighting', quality: 'quality', other: 'other'
+            };
+            prompts.forEach(p => {
+                const key = categoryMap[p.category];
+                if (key) finalPrompt[key] = (finalPrompt[key] ? finalPrompt[key] + ', ' : '') + p.value;
+            });
+            if (aspectRatioSelect.value) finalPrompt.aspect_ratio = aspectRatioSelect.value;
+            return finalPrompt;
+        }
+
+        function formatPromptToString(promptObject) {
+            let parts = [];
+            if (promptObject.subject) parts.push(promptObject.subject);
+            if (promptObject.details) parts.push(promptObject.details);
+            if (promptObject.style) parts.push(`in ${promptObject.style} style`);
+            if (promptObject.color_palette) parts.push(`with a ${promptObject.color_palette} color palette`);
+            if (promptObject.mood) parts.push(`a ${promptObject.mood} mood`);
+            if (promptObject.lighting) parts.push(`${promptObject.lighting}`);
+            if (promptObject.quality) parts.push(`${promptObject.quality}`);
+            if (promptObject.other) parts.push(promptObject.other);
+            if (promptObject.aspect_ratio) parts.push(`aspect ratio ${promptObject.aspect_ratio}`);
+            return parts.filter(Boolean).join(', ');
+        }
+        
+        function updateGeneratedPrompt() {
+            const promptObj = getGeneratedPromptObject();
+            generatedPromptDiv.textContent = Object.keys(promptObj).length === 0
+                ? 'Prompt Anda akan muncul di sini.'
+                : JSON.stringify(promptObj, null, 2);
+        }
+
+        async function generateRandomIdea() {
+            const selectedCategory = categorySelect.value;
+
+            if (selectedCategory === 'style' || selectedCategory === 'quality' || selectedCategory === 'lighting') {
+                let selectElement;
+                if (selectedCategory === 'style') selectElement = styleValueSelect;
+                else if (selectedCategory === 'quality') selectElement = qualityValueSelect;
+                else if (selectedCategory === 'lighting') selectElement = lightingValueSelect;
+
+                const options = Array.from(selectElement.options);
+                const randomIndex = Math.floor(Math.random() * options.length);
+                selectElement.value = options[randomIndex].value;
+                
+                addUpdatePrompt();
+                return;
+            }
+
+            randomIdeaBtn.disabled = true;
+            addUpdateBtn.disabled = true;
+            valueInput.placeholder = 'Mendapatkan ide...';
+
+            const displayCategory = displayCategoryIndonesian(selectedCategory);
+            let promptForGemini = '';
+
+            if (selectedCategory === 'detail') {
+                const subjectPrompt = prompts.find(p => p.category === 'subject');
+                if (!subjectPrompt) {
+                    showModal('Peringatan', "Harap isi kategori 'Subjek' terlebih dahulu sebelum meminta ide untuk 'Detail'.");
+                    randomIdeaBtn.disabled = false;
+                    addUpdateBtn.disabled = false;
+                    valueInput.placeholder = placeholders.detail;
+                    return;
+                }
+                const subjectValue = subjectPrompt.value;
+                promptForGemini = `Provide a relevant and interesting detail in English for the following subject: "${subjectValue}". Return it in JSON format with a single property: "value". Example for subject "a cat": {"value": "wearing a tiny hat"}.`;
+            } else {
+                promptForGemini = `Provide a random and unique image prompt value in English for the category "${displayCategory}". Return it in JSON format with a single property: "value". For example, if the category is "Gaya", a valid response would be {"value": "impressionistic oil painting"}.`;
+            }
+            
+            try {
+                const payload = {
+                    contents: [{ role: "user", parts: [{ text: promptForGemini }] }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: { type: "OBJECT", properties: { "value": { "type": "STRING" } } }
+                    }
+                };
+                const apiKey = getApiKey();
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                const response = await fetchWithRetry(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const result = await response.json();
+
+                if (!response.ok) throw new Error(result.error?.message || 'Gagal menghasilkan ide. Pastikan Kunci API Anda valid.');
+
+                const jsonString = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                const parsedIdea = JSON.parse(jsonString);
+                
+                valueInput.value = parsedIdea.value;
+                addUpdatePrompt();
+            } catch (error) {
+                console.error('Error saat menghasilkan ide acak:', error);
+                showModal('Gagal Mendapatkan Ide', error.message);
+            } finally {
+                randomIdeaBtn.disabled = false;
+                addUpdateBtn.disabled = false;
+                updateValueInputVisibility();
+            }
+        }
+        
+        async function expandIdea() {
+            const subjectPrompt = prompts.find(p => p.category === 'subject');
+            if (!subjectPrompt) {
+                showModal('Peringatan', "Harap isi kategori 'Subjek' terlebih dahulu sebelum menggunakan fitur 'Kembangkan Ide'.");
+                return;
+            }
+
+            expandIdeaBtn.disabled = true;
+            expandIdeaBtn.textContent = 'Mengembangkan...';
+
+            const promptForGemini = `
+                Based on the subject "${subjectPrompt.value}", act as a creative assistant for an image prompt generator. 
+                Provide creative and cohesive suggestions for the following categories: detail, style, mood, and lighting.
+                Return the response as a JSON object with the keys "detail", "style", "mood", and "lighting".
+                Example for subject "a knight": {"detail": "in shining silver armor", "style": "fantasy art", "mood": "epic, heroic", "lighting": "dramatic lighting"}
+            `;
+
+            try {
+                const payload = {
+                    contents: [{ role: "user", parts: [{ text: promptForGemini }] }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                "detail": { "type": "STRING" },
+                                "style": { "type": "STRING" },
+                                "mood": { "type": "STRING" },
+                                "lighting": { "type": "STRING" }
+                            }
+                        }
+                    }
+                };
+                const apiKey = getApiKey();
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                const response = await fetchWithRetry(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const result = await response.json();
+
+                if (!response.ok) throw new Error(result.error?.message || 'Gagal mengembangkan ide. Pastikan Kunci API Anda valid.');
+
+                const jsonString = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                const suggestions = JSON.parse(jsonString);
+
+                Object.keys(suggestions).forEach(key => {
+                    const category = key;
+                    const value = suggestions[key];
+                    const existingIndex = prompts.findIndex(p => p.category === category);
+                    if (existingIndex !== -1) {
+                        prompts[existingIndex].value = value;
+                    } else {
+                        prompts.push({ category, value });
+                    }
+                });
+
+                renderPromptList();
+                showModal('Berhasil', 'Ide Anda telah berhasil dikembangkan!');
+
+            } catch (error) {
+                console.error('Error saat mengembangkan ide:', error);
+                showModal('Gagal Mengembangkan Ide', error.message);
+            } finally {
+                expandIdeaBtn.disabled = false;
+                expandIdeaBtn.textContent = '✨ Kembangkan';
+            }
+        }
+
+        async function analyzePrompt() {
+            const promptObject = getGeneratedPromptObject();
+            if (Object.keys(promptObject).length === 0) {
+                showModal('Peringatan', 'Tidak ada prompt untuk dianalisis. Silakan tambahkan beberapa prompt terlebih dahulu.');
+                return;
+            }
+
+            analyzePromptBtn.disabled = true;
+            analyzePromptBtn.textContent = 'Menganalisis...';
+
+            const promptTextForAPI = formatPromptToString(promptObject);
+            const promptForGemini = `
+                As an expert in AI image generation, analyze the following prompt and provide constructive feedback.
+                The prompt is: "${promptTextForAPI}"
+                
+                Provide a brief analysis covering:
+                1.  Clarity and Specificity: Is the prompt clear?
+                2.  Potential Improvements: Suggest one or two specific additions or changes.
+                3.  Overall Strength: Give a brief summary of its effectiveness.
+
+                Keep the entire response concise and easy to read.
+            `;
+
+            try {
+                const payload = {
+                    contents: [{ role: "user", parts: [{ text: promptForGemini }] }]
+                };
+                const apiKey = getApiKey();
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                
+                const response = await fetchWithRetry(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const result = await response.json();
+
+                if (!response.ok) throw new Error(result.error?.message || 'Gagal menganalisis prompt. Pastikan Kunci API Anda valid.');
+
+                const analysisText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                showModal('Analisis Prompt', analysisText);
+
+            } catch (error) {
+                console.error('Error saat menganalisis prompt:', error);
+                showModal('Gagal Menganalisis', error.message);
+            } finally {
+                analyzePromptBtn.disabled = false;
+                analyzePromptBtn.textContent = '✨ Analisis';
+            }
+        }
+
+        // ===================================================================================
+        // Event Listeners & Inisialisasi Aplikasi
+        // ===================================================================================
+        addUpdateBtn.addEventListener('click', addUpdatePrompt);
+        cancelEditBtn.addEventListener('click', cancelEdit);
+        clearAllPromptsBtn.addEventListener('click', clearAllPrompts);
+        randomIdeaBtn.addEventListener('click', generateRandomIdea);
+        aspectRatioSelect.addEventListener('change', updateGeneratedPrompt);
+        
+        expandIdeaBtn.addEventListener('click', expandIdea);
+        analyzePromptBtn.addEventListener('click', analyzePrompt);
+        copyPromptBtn.addEventListener('click', copyGeneratedPrompt);
+        
+        saveApiKeyBtn.addEventListener('click', saveApiKey);
+        
+        valueInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addUpdateBtn.click();
+            }
+        });
+
+        categorySelect.addEventListener('change', updateValueInputVisibility);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSettings();
+            loadApiKey();
+            renderPromptList();
+            updateValueInputVisibility();
+        });
+    </script>
+</body>
+</html>
