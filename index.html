@@ -641,14 +641,14 @@
                         </div>
                         <div class="actions flex-shrink-0 flex items-center gap-1">
                             <button class="btn btn-icon btn-edit" title="Edit Prompt" data-index="${index}">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                    <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zM12.293 6.5l-3 3L8 11.293 6.793 10 9.5 7.293 6.5 4.293 4.293 6.5 3 5.207 12.5 1.207 14.793 3.5z"/>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+                                    <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
                                 </svg>
                             </button>
                             <button class="btn btn-icon btn-danger" title="Hapus Prompt" data-index="${index}">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
-                                    <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3V2h11v1z"/>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
                                 </svg>
                             </button>
                         </div>
@@ -804,6 +804,11 @@
         }
 
         async function generateRandomIdea() {
+            if (!getApiKey()) {
+                showModal('Kunci API Diperlukan', 'Anda harus memasukkan Kunci API untuk menggunakan fitur "Ide Acak".');
+                return;
+            }
+
             const selectedCategory = categorySelect.value;
 
             if (selectedCategory === 'style' || selectedCategory === 'quality' || selectedCategory === 'lighting') {
@@ -856,7 +861,7 @@
                 const response = await fetchWithRetry(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 const result = await response.json();
 
-                if (!response.ok) throw new Error(result.error?.message || 'Gagal menghasilkan ide. Pastikan Kunci API Anda valid.');
+                if (!response.ok) throw new Error(result.error?.message || 'Gagal menghasilkan ide. Pastikan Kunci API Anda valid dan memiliki izin yang benar.');
 
                 const jsonString = result.candidates?.[0]?.content?.parts?.[0]?.text;
                 const parsedIdea = JSON.parse(jsonString);
@@ -865,7 +870,7 @@
                 addUpdatePrompt();
             } catch (error) {
                 console.error('Error saat menghasilkan ide acak:', error);
-                showModal('Gagal Mendapatkan Ide', error.message);
+                showModal('Gagal Mendapatkan Ide', `Terjadi kesalahan: ${error.message}`);
             } finally {
                 randomIdeaBtn.disabled = false;
                 addUpdateBtn.disabled = false;
@@ -874,6 +879,11 @@
         }
         
         async function expandIdea() {
+            if (!getApiKey()) {
+                showModal('Kunci API Diperlukan', 'Anda harus memasukkan Kunci API untuk menggunakan fitur "Kembangkan Ide".');
+                return;
+            }
+
             const subjectPrompt = prompts.find(p => p.category === 'subject');
             if (!subjectPrompt) {
                 showModal('Peringatan', "Harap isi kategori 'Subjek' terlebih dahulu sebelum menggunakan fitur 'Kembangkan Ide'.");
@@ -912,7 +922,7 @@
                 const response = await fetchWithRetry(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 const result = await response.json();
 
-                if (!response.ok) throw new Error(result.error?.message || 'Gagal mengembangkan ide. Pastikan Kunci API Anda valid.');
+                if (!response.ok) throw new Error(result.error?.message || 'Gagal mengembangkan ide. Pastikan Kunci API Anda valid dan memiliki izin yang benar.');
 
                 const jsonString = result.candidates?.[0]?.content?.parts?.[0]?.text;
                 const suggestions = JSON.parse(jsonString);
@@ -933,7 +943,7 @@
 
             } catch (error) {
                 console.error('Error saat mengembangkan ide:', error);
-                showModal('Gagal Mengembangkan Ide', error.message);
+                showModal('Gagal Mengembangkan Ide', `Terjadi kesalahan: ${error.message}`);
             } finally {
                 expandIdeaBtn.disabled = false;
                 expandIdeaBtn.textContent = '✨ Kembangkan';
@@ -941,6 +951,11 @@
         }
 
         async function analyzePrompt() {
+            if (!getApiKey()) {
+                showModal('Kunci API Diperlukan', 'Anda harus memasukkan Kunci API untuk menggunakan fitur "Analisis".');
+                return;
+            }
+
             const promptObject = getGeneratedPromptObject();
             if (Object.keys(promptObject).length === 0) {
                 showModal('Peringatan', 'Tidak ada prompt untuk dianalisis. Silakan tambahkan beberapa prompt terlebih dahulu.');
@@ -973,14 +988,14 @@
                 const response = await fetchWithRetry(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 const result = await response.json();
 
-                if (!response.ok) throw new Error(result.error?.message || 'Gagal menganalisis prompt. Pastikan Kunci API Anda valid.');
+                if (!response.ok) throw new Error(result.error?.message || 'Gagal menganalisis prompt. Pastikan Kunci API Anda valid dan memiliki izin yang benar.');
 
                 const analysisText = result.candidates?.[0]?.content?.parts?.[0]?.text;
                 showModal('Analisis Prompt', analysisText);
 
             } catch (error) {
                 console.error('Error saat menganalisis prompt:', error);
-                showModal('Gagal Menganalisis', error.message);
+                showModal('Gagal Menganalisis', `Terjadi kesalahan: ${error.message}`);
             } finally {
                 analyzePromptBtn.disabled = false;
                 analyzePromptBtn.textContent = '✨ Analisis';
